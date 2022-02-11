@@ -162,11 +162,13 @@
       <div class="col-sm mx-1">
         <div class="card text-light bg-dark h-100 text-center">
           <div class="card-body font-weight-bold" style="font-size: 18px">
-            Driver Pedal Usage:
-            <br>
+							   
+				
             <span style="float:left;">&nbspBrake: </span><span id="driver-brake" style="font-size: 20x;">N/A</span>
             <br>
             <span style="float:left;">&nbspAccel: </span><span id="accel-posn" style="font-size: 20x;">N/A</span>%
+            <br>
+            <span style="float:left;">&nbspSteer: </span> <span id="steering-angle" style="font-size: 20px;">N/A</span>&#176;
           </div>
         </div>
       </div>
@@ -210,7 +212,6 @@
           Test Row:
           <br>
           <span style="float:left;">&nbspOdometer: </span> <span id="odometer" style="font-size: 20px;">N/A</span>
-          
           <br>
         </div>
       </div>
@@ -248,10 +249,9 @@ var msgBuf = [];
 //var g_conversion = 0.101972; //conversion factor from m/s^2 to g's
 var smooth_degree = 10; // set to 0 to disable smoothing, use a value somothing like 5 to 30
 var raw_display_n = 100;
-var raw_display_data = d3.range(raw_display_n).map(function(d) {return {"lat": undefined,"long": undefined}}); //start with a full set of empty records
-var smoothed_display_data = smooth_pair(raw_display_data,smooth_degree); //this is just so we can calulate to shortened length after smoothing
+var raw_display_data = d3.range(raw_display_n).map(function(d) {return {"lat": undefined,"long": undefined,"vert": undefined}}); //start with a full set of empty records
+var smoothed_display_data = smooth_trio(raw_display_data,smooth_degree); //this is just so we can calulate to shortened length after smoothing
 display_n = smoothed_display_data.length;
-var sin_display_data = [];
 
 //test data only (when MQTT is disabled)
 var test_data = [], test_data_i = 0;
@@ -263,7 +263,7 @@ var svg1, long_line;
 
 //fading tail
 var tail_redraw_time_ms = 100; //can be changed 
-var tail_yScale, tail_xScale, tail_RadiusScale, tail_FillScale;
+var tail_zScale, tail_yScale, tail_zScale, tail_RadiusScale, tail_FillScale;
 var svg2;
 
 
@@ -279,7 +279,8 @@ if (MQTT_enabled)
 else 
 	similulate_data_feed();
 	
-
+	
+	
 long_accel_time_plot_initialise();
 long_accel_time_plot_redraw_loop();
 
@@ -290,20 +291,6 @@ fading_tail_redraw_loop();
 // FUNCTIONS
 
 
-function mysin(G,axis) {
-	if (axis == "x")
-		cap = Gxcap;
-	else if (axis == "z")
-		cap = Gzcap;
-	else	
-		cap = Gycap;
-	foo = cap*1.1;
-	if (G < 0) 
-		G_cappped = Math.max(G,-cap);
-	else
-		G_cappped = Math.min(G,cap);
-	return Math.sin(G_cappped*Math.PI/2/foo);
-}
 
 
 
@@ -314,10 +301,11 @@ function similulate_data_feed() {
 }
 
 
-function updateDataset(lat,long) {
-	raw_display_data.push({ "lat": lat, "long": long}); //Add one record to end of array.
+function updateDataset(lat, long, vert) {
+	console.log(lat, long, vert)
+	raw_display_data.push({ "lat": lat, "long": long, "vert": vert}); //Add one record to end of array.
 	raw_display_data.shift(); // remove one rcord from start of array
-	smoothed_display_data  = smooth_pair(raw_display_data,smooth_degree);
+	smoothed_display_data  = smooth_trio(raw_display_data,smooth_degree);
 }
 
 
@@ -335,7 +323,7 @@ function showValue(st, payload) {
 	$('#' + msgi).css('color', payload2);
 
 	if (msgi == "accel") {
-	  updateDataset(payload1,payload2); 
+	  updateDataset(payload1,payload2, msplit[2]); 
 	  $('#lat-accel').html(payload1);
 	  $('#lon-accel').html(payload2);
 	} else {
@@ -391,8 +379,8 @@ function MQTTconnect() {
 }
 
 function TESTING_get_test_data() {
-  //url = "test_accel_data.json";
-  url = "test_accel_data_short.json";
+  url = "test_accel_data.json";
+  //url = "test_accel_data_short.json";
   fetch(url)
     .then(response => {
       if (response.ok) {
@@ -409,13 +397,8 @@ function TESTING_push_out_data_to_display_sets() {
 	
 		raw_display_data.push(test_data[test_data_i]); //Add one record to end of array.
 		raw_display_data.shift();	//Remove one record from start of a array
-		smoothed_display_data  = smooth_pair(raw_display_data,smooth_degree);
-		
-		sin_display_data = [];
-		for (const row of smoothed_display_data) {
-			sin_display_data.push({ "lat": mysin(row.lat,"x"), "long": mysin(row.long,"y")});
-		}
-		
+		smoothed_display_data  = smooth_trio(raw_display_data,smooth_degree);
+
 		test_data_i++;	//Keep track of the last test record added to the fade_display_data array.
 		if (test_data_i > test_data.length) {
 		  test_data_i = 0;
@@ -486,17 +469,25 @@ function long_accel_time_plot_initialise() {
 	  .text("Long Accel.");
 
 }
+function empty_to_zero(value) {
+	if (!value)
+		value = 0;
+	return value;	
+}
 
 function long_accel_time_plot_redraw_loop() {
 
 	// copy data from smoothed_display_data
 	long_display_data = []
-	for (const row of sin_display_data) {
+	for (const row of smoothed_display_data) {
+		/*
 		if (row.long)
-			long = row.long
+			long = mysin(row.long,"y");
 		else
 			long = 0;
 		long_display_data.push({ "y": long});
+			*/
+		long_display_data.push({ "y": empty_to_zero(mysin(row.long,"y"))});
 	}
 	
 	d3.select("#my_path").remove(); //clear the previous line draw on the chart
@@ -526,6 +517,7 @@ function fading_tail_initialise() {
 
 	tail_xScale = d3.scaleLinear().domain([mysin(-setting_xscale_G,"x"),mysin(setting_xscale_G,"x")]).range([0, width]); // forward acceleration is down on the plot.
 	tail_yScale = d3.scaleLinear().domain([mysin(setting_yscale_G,"y"), mysin(-setting_yscale_G,"y")]).range([height, 0]); // left turns is right on the plot.
+	tail_zScale = d3.scaleLinear().domain([0,0.4]).range([5,30]); // draw larger radius circle with +vertical G's 
 	tail_FillScale = d3.scaleLinear().domain([0,display_n]).range(["#FFFFFF","#000000"]); //Fade to , Fade From
 	tail_RadiusScale = d3.scaleLinear().domain([0,display_n]).range([1,5]); //circle size to size, from size
 	// Start drawing the base
@@ -565,38 +557,41 @@ function fading_tail_initialise() {
 	}
 }
 
-
 function fading_tail_redraw_loop() {
 
-	var fade_display_data = sin_display_data;
-
+	var fade_display_data = smoothed_display_data;
+	var radius;
 	svg2.select("#my_path2").remove();
 	my_path2 = svg2.append("g").attr("id","my_path2")
 	for (var i = 0; i < fade_display_data.length; i++) {
-	  if (fade_display_data[i]) { // Ignore record if undefined, sometime a undefined record is added to fade_display_data and it breaks the system  
-		if (i == fade_display_data.length-1) {
-          strokewidth = 6;
-          stroke = "red"; }
-		else {
-		  strokewidth = 0;
-		  stroke = "none"; }
-		  
-		if (fade_display_data[i].lat && fade_display_data[i].long) { //only draw circles if lat and long have values.
-			my_path2.append("circle")
-			.attr("id","my_path2")
-			.attr("cx", tail_xScale(fade_display_data[i].lat))
-			.attr("cy", tail_yScale(fade_display_data[i].long))	 
-			.style('r', tail_RadiusScale(i))
-			.style('fill', tail_FillScale(i))
-			.style("stroke-width", strokewidth)
-			.style("stroke", stroke);
+		if (fade_display_data[i]) { // Ignore record if undefined, sometime a undefined record is added to fade_display_data and it breaks the system  
+			if (i == fade_display_data.length-1) {
+			  strokewidth = 5;
+			  stroke = "red"; 			  
+			  radius = tail_zScale(fade_display_data[i].vert); 
+			  }
+			else {
+			  strokewidth = 0;
+			  stroke = "none";
+			  radius = tail_RadiusScale(i);
+			  }
+			  
+			if (fade_display_data[i].lat && fade_display_data[i].long) { //only draw circles if lat and long have values.
+				my_path2.append("circle")
+					.attr("id","my_path2")
+					.attr("cx", tail_xScale(mysin(fade_display_data[i].lat,"x")))
+					.attr("cy", tail_yScale(mysin(fade_display_data[i].long,"y")))
+					.style('r', radius)
+					.style('fill', tail_FillScale(i))
+					.style("stroke-width", strokewidth)
+					.style("stroke", stroke);
 			}
-	  }
+		}
 	}
-
 	if (window.performance.now() < pause_time_ms || pause_time_ms == 0)
 		setTimeout(fading_tail_redraw_loop, tail_redraw_time_ms); //do it again in 0.05 seconds
 }
+
 
 
 function smooth(list, degree) {
@@ -619,35 +614,52 @@ function smooth(list, degree) {
     return smoothed;
 }
 
-function smooth_pair(latlong_list, degree) {
+function smooth_trio(trio_list, degree) {
 
 	if (degree==0) // don't smooth
-		return latlong_list; //return raw data
+		return trio_list; //return raw data
 
 	var lat_list = [];
 	var long_list = [];
+	var vert_list = [];
 	
-	for (const row of latlong_list) {
+	for (const row of trio_list) {
 		try {
 			lat_list.push(row.lat);
 			long_list.push(row.long);
+			vert_list.push(row.vert);
 		}
 		catch(err) {
-			// do nothing
+			console.log("Error in smooth_trio()");
 		}
 	}
 	var smooth_lat_list = smooth(lat_list,degree);
 	var smooth_long_list = smooth(long_list,degree);
-	var smoothed_acc_list = [];
-	i = 0;
+	var smooth_vert_list = smooth(vert_list,degree);
+	
+	var smoothed_acc_list = [], i = 0;
 	for (const value of smooth_lat_list) {
-		var smooth_acc_list = [];
-		smoothed_acc_list.push({"lat": smooth_lat_list[i], "long": smooth_long_list[i] }); 
+		smoothed_acc_list.push({"lat": smooth_lat_list[i], "long": smooth_long_list[i], "vert": smooth_vert_list[i] }); 
 		i++;
 	}	
 	return smoothed_acc_list;
 }
 
+
+function mysin(G,axis) {
+	if (axis == "x")
+		cap = Gxcap;
+	else if (axis == "z")
+		cap = Gzcap;
+	else	
+		cap = Gycap;
+	foo = cap*1.1;
+	if (G < 0) 
+		G_cappped = Math.max(G,-cap);
+	else
+		G_cappped = Math.min(G,cap);
+	return Math.sin(G_cappped*Math.PI/2/foo);
+}
 
 </script>
 
