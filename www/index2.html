@@ -95,13 +95,6 @@
     .text-center {
       text-align: center !important
     }
-	
-	
-    svg {
-      max-height: 520px;
-      max-width: 520px;
-    }
-	
     </style>
   </head>
 
@@ -223,18 +216,6 @@
         </div>
 
         <div class="col-sm mx-1">
-          <!--second row, first column -->
-          <div class="card text-light bg-dark h-100 text-center">
-            <div class="card-body font-weight-bold">
-              <div class="bg-dark" id="steering"></div>
-            </div>
-          </div>
-        </div>
-
-
-
-
-        <div class="col-sm mx-1">
           <!--second row, second column -->
           <div class="card text-light bg-dark h-100 text-center">
             <div class="card-body font-weight-bold">
@@ -287,7 +268,8 @@
     display_n = smoothed_display_data.length;
 
     //test data only (when MQTT is disabled)
-    var test_data = [], test_steering = [], test_data_i = 0, test_steering_i=0;
+    var test_data = [],
+      test_data_i = 0;
     pause_time_ms = 0; //2000; // pause the redrawing. Used for debugging. Set to 0 for no pause.
 
     // accel long plot
@@ -303,14 +285,11 @@
     var setting_yscale_G = 0.8; //dual axis-accel plot vertical scale in G's
     var Gycap = setting_yscale_G, Gxcap = setting_xscale_G;
 
-    var tail_fill_color_dark_ap_engaged = "#0033FF"; 
+    var tail_fill_color_dark_ap_engaged = "#0052E6";
     var tail_fill_color_light_ap_engaged = "#d2dbff";  
     var tail_fill_color_dark = "#000000"; 
     var tail_fill_color_light = "#dedede";  
 
-	//Steering
-    var svg3, steering_angle=0, steering_redraw_time_ms = 20;
-	
     //EXECUTE
 
     if (MQTT_enabled) MQTTconnect();
@@ -321,10 +300,6 @@
 
     fading_tail_initialise();
     fading_tail_redraw_loop();
-
-    steering_initialise();
-   steering_redraw_loop();
-
 
     // FUNCTIONS
 
@@ -422,15 +397,7 @@
 
     function TESTING_get_test_data() {
       url = "test_accel_data.json";
-      //url = "test_accel_data_short.json";
-	  
-	  
-	  // Sinwave for steering simulation
-      for (i = 0; i < 500; i++) {
-        test_steering.push({ steering: 90*Math.sin(i/10) });
-      }
-	  //console.log(test_steering);
-	  
+      url = "test_accel_data_short.json";
       fetch(url)
         .then((response) => {
           if (response.ok) {
@@ -451,18 +418,10 @@
         smoothed_display_data = smooth_trio(raw_display_data, smooth_degree);
 
         test_data_i++; //Keep track of the last test record added to the fade_display_data array.
-		if (test_data_i > test_data.length-1) {
-		  test_data_i = 0;
-		}	  
-	  
-		steering_angle = Math.round(test_steering[test_steering_i].steering);
-        test_steering_i++; //Keep track of the last test record added to the fade_display_data array.
-        if (test_steering_i > test_steering.length-1) {
-          test_steering_i = 0;
+        if (test_data_i > test_data.length) {
+          test_data_i = 0;
         }
       }
-	  
-
       if (window.performance.now() < pause_time_ms || pause_time_ms == 0)
         setTimeout(TESTING_push_out_data_to_display_sets, 20); //do it again in 20ms
     }
@@ -687,6 +646,7 @@
             fill = tail_FillScaleAPengaged(i);
           else 
             fill = tail_FillScale(i);
+          	
 
           if (fade_display_data[i].lat && fade_display_data[i].long) {
             //only draw circles if lat and long have values.
@@ -706,58 +666,7 @@
         setTimeout(fading_tail_redraw_loop, tail_redraw_time_ms); //do it again in 0.05 seconds
     }
 
-
-    function steering_initialise() {
-      var innerWidth = 100; //adjust to control the display size of the visualisation
-      var innerHeight = 100;
-      var margin = { top: 0, right: 0, bottom: 0, left: 0 },
-        width = innerWidth - margin.left - margin.right,
-        height = innerHeight - margin.top - margin.bottom;
-
-      // Start drawing the base
-      svg3 = d3
-        .select("#steering")
-        .append("svg")
-        .attr("id", "my_chart2")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-
-//		d3.select("#my_path3").remove(); //clear the previous line draw on the chart
-
-		var xx = svg3.append("g")
-		.attr("id", "my_path3")
-		.attr("transform", "translate(50, 50) rotate(0) translate(-50, -50)");
-
-		d3.xml("autopilot.svg")
-		  .then(data => {
-			xx.node().append(data.documentElement)
-		  });	 
-
-//XXX
-
-/*
-		xx.append("text")
-			.attr("x", 5)
-			.attr("y", 5)
-			.attr("dy", ".35em")
-			.text("XX.X");
-*/
-				  
-
-    }
-
-	function steering_redraw_loop() {
-		svg3.select("#my_path3")
-		.attr("transform", "translate(50, 50) rotate("+steering_angle+") translate(-50, -50)");
-
-		if (window.performance.now() < pause_time_ms || pause_time_ms == 0)
-			setTimeout(steering_redraw_loop, steering_redraw_time_ms); //do it again in 0.05 seconds
-	}
-
-	function smooth(list, degree) {
+    function smooth(list, degree) {
       // Source: https://gist.github.com/bycoffe/1207194
       // Adapted from http://www.swharden.com/blog/2008-11-17-linear-data-smoothing-in-python/
       var win = degree * 2 - 1;
