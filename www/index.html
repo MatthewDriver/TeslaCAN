@@ -319,9 +319,9 @@
     var tail_fill_color_light = "#dedede";  
 
 	//Steering
-    var steering_svg, steering_angle=0, steering_redraw_time_ms = 20;
-	var steering_size = 400;
-	var old_millis = 0;
+    var steering_svg, steering_angle_svg=0, steering_redraw_time_ms = 20;
+	  var steering_size = 200;
+	  var old_millis = 0;
 	
     //EXECUTE
     if (MQTT_enabled) MQTTconnect();
@@ -338,7 +338,7 @@
     fading_tail_redraw_loop();
 
     steering_initialise();
-	steering_redraw_loop();
+	  steering_redraw_loop();
 
 
 
@@ -346,11 +346,11 @@
     function similulate_data_feed() {
       TESTING_get_test_data();
       TESTING_push_out_data_to_display_sets();
-	  TESTING_flip_ap_engaged();
+	    TESTING_flip_ap_engaged();
     }
     
     function updateDataset(lat, long, vert) {
-      console.log(lat, long, vert);
+      //console.log(lat, long, vert);
       raw_display_data.push({ lat: lat, long: long, vert: vert }); //Add one record to end of array.
       raw_display_data.shift(); // remove one rcord from start of array
       smoothed_display_data = smooth_trio(raw_display_data, smooth_degree);
@@ -361,7 +361,7 @@
       var ssplit = st.split("_");
       var msgn = ssplit[0];
       var msgi = ssplit[1];
-      //    console.log("msgn: " + msgn + " msgi: " + msgi + " val " + payload);
+      //console.log("msgn: " + msgn + " msgi: " + msgi + " val " + payload);
 
       if (msgn == "custom") {
         //ui/brick_59 85;2.5 from KORN
@@ -385,11 +385,18 @@
             ap_engaged = false;
             $("#" + msgi).html(payload1); 
           }
-
-        } else { //message custom but not accel
+        }
+        else { //message custom but not accel or ap-state
           $("#" + msgi).html(payload1); //sets html to value after _
         }
-      } else { //msg not custom split by _
+      }
+      //not custom .. is it steering angle
+      else if (msgn == "steering-angle") {
+          steering_angle_svg = payload;
+          //console.log("msgn: " + msgn + " msgi: " + msgi + " val " + payload);
+          $("#" + st).html(payload);
+      } 
+      else { //msg not custom or steering angle split by _
         $("#" + st).html(payload);
       }
     }
@@ -469,7 +476,7 @@
         if (test_data_i > test_data.length) {
 		  test_data_i = 0;
 		}	  
-		steering_angle = Math.round(test_steering[test_steering_i].steering);
+		steering_angle_svg = Math.round(test_steering[test_steering_i].steering);
         test_steering_i++; //Keep track of the last test record added to the fade_display_data array.
         if (test_steering_i > test_steering.length-1) {
           test_steering_i = 0;
@@ -878,7 +885,7 @@
 
 	function steering_redraw_loop() {
 		steering_svg.select("#autopilot")
-			.attr("transform", "scale (" +steering_size/100+"), translate(50,50) rotate("+steering_angle+") translate(-50,-50)");
+			.attr("transform", "scale (" +steering_size/100+"), translate(50,50) rotate("+steering_angle_svg+") translate(-50,-50)");
 
 		steering_svg.select("#autopilot_arrow")
 			.attr("transform", "scale (" +steering_size/100+")");
