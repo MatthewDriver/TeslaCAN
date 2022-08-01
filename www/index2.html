@@ -323,6 +323,7 @@
     var steering_size = 200;
     var wheel_height_ratio = 0.90;
     var old_millis = 0;
+	var model_3_steering_ratio = 10;
 
     //EXECUTE
     if (MQTT_enabled) MQTTconnect();
@@ -1018,7 +1019,7 @@
 			
 		scaleB = 1/wheel_height_ratio * 50 - 50;
 		steering_svg.select("#wheel")
-			.attr("transform", "scale (" + wheel_height_ratio * steering_size/100+") translate("+scaleB+","+scaleB+") translate(50,50) rotate("+steering_angle_svg/12+") translate(-50,-50)");
+			.attr("transform", "scale (" + wheel_height_ratio * steering_size/100+") translate("+scaleB+","+scaleB+") translate(50,50) rotate("+steering_angle_svg/model_3_steering_ratio+") translate(-50,-50)");
 
 
 
