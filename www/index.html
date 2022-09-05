@@ -243,6 +243,14 @@
                 </div>
               </div>
             </div>
+
+            <div class="card-body font-weight-bold">
+              <br />
+              <span style="float: left">&nbspJerk: </span>
+              <span id="jerk-current" style="font-size: 20px">N/A</span>
+              <br />
+            </div>
+
             
           </div>
         </div>
@@ -715,11 +723,12 @@
         .style("stroke", "#FFFF00")
         .style("stroke-width", 3);
 
-      d3.select("#jerk_value_id").remove();
 
 	const jerk_rounded = jerk.toFixed(2);
+	$("#jerk-current").html(jerk_rounded);
 
-
+/*
+d3.select("#jerk_value_id").remove();
       svg_jerk
         .append("text")        
 		.attr("id", "jerk_value_id")
@@ -731,6 +740,7 @@
         .style("font-family", "Arial, Helvetica, sans-serif")
         .style("font-weight", "700")
         .text( jerk_rounded);
+		*/
 //XXX
 
       if (window.performance.now() < pause_time_ms || pause_time_ms == 0)
