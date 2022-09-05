@@ -285,7 +285,7 @@
     }); //start with a full set of empty records
 	
 
-    var raw_speed_data_display_n = 100;
+    var raw_speed_data_display_n = 300;
     var raw_speed_data = d3.range(raw_speed_data_display_n).map(function (d) {
       return { speed: undefined };
     });
@@ -474,6 +474,7 @@
 	  // create test data between -10 and 75 MPH.
       for (i = 0; i < data_points; i++) {
         test_speed_data.push({ speed: 42.5*Math.sin(8*3.142*i/data_points)+32.5});
+        //test_speed_data.push({ speed: 5*Math.sin(8*3.142*i/data_points)});  // test the zero position line
       }	  
 	  
       fetch(url)
@@ -563,10 +564,10 @@
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
       // x-axis, 0 line
-	  var position_x_axis = height * (speed_max_cap+speed_min_cap)/(speed_max_cap-speed_min_cap);
+	  //var position_x_axis = height * (speed_max_cap+speed_min_cap)/(speed_max_cap-speed_min_cap);
       svg_speed_plot
         .append("line")
-        .attr("transform", "translate(0," + position_x_axis + ")")
+        .attr("transform", "translate(0," + speed_yScale(0) + ")")
         .style("stroke", "yellow")
         .style("stroke-width", 1)
         .attr("x1", 0)
@@ -634,7 +635,7 @@
 
       svg_jerk
         .append("line")
-        .attr("transform", "translate(0," + height / 2 + ")")
+        .attr("transform", "translate(0," + lat_jerk_yScale(0) + ")")
         .style("stroke", "yellow")
         .style("stroke-width", 1)
         .attr("x1", 0)
@@ -643,6 +644,8 @@
         .attr("y2", 0);
 
       //Title
+	  
+	  
       svg_jerk
         .append("text")
         .attr("x", 0)
@@ -711,6 +714,24 @@
         .style("fill", "none")
         .style("stroke", "#FFFF00")
         .style("stroke-width", 3);
+
+      d3.select("#jerk_value_id").remove();
+
+	const jerk_rounded = jerk.toFixed(2);
+
+
+      svg_jerk
+        .append("text")        
+		.attr("id", "jerk_value_id")
+        .attr("x", 0)
+        .attr("y", 70)
+        .attr("text-anchor", "left")
+        .style("font-size", "20px")
+        .style("fill", "#FFFF00")
+        .style("font-family", "Arial, Helvetica, sans-serif")
+        .style("font-weight", "700")
+        .text( jerk_rounded);
+//XXX
 
       if (window.performance.now() < pause_time_ms || pause_time_ms == 0)
         setTimeout(lat_jerk_time_plot_redraw_loop, lat_jerk_redraw_time_ms);
