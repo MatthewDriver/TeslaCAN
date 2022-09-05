@@ -365,6 +365,14 @@
     steering_initialise();
     steering_redraw_loop();
 
+	console.log(Math.sin(Math.PI / 2 ));
+	console.log(Math.sin(0 * Math.PI / 2 ));
+	console.log(Math.sin(0.25 * Math.PI / 2 ));
+	console.log(Math.sin(0.5 * Math.PI / 2 ));
+	console.log(Math.sin(0.75 * Math.PI / 2 ));
+	console.log(Math.sin(1 * Math.PI / 2 ));
+
+
     // FUNCTIONS
 
     
@@ -1108,10 +1116,10 @@ d3.select("#jerk_value_id").remove();
 
     function mysin(value,cap) {
       if (value < 0) 
-		cappped = Math.max(value, -cap);
+		cappped_value = Math.max(value, -cap);
       else 
-		cappped = Math.min(value, cap);
-      return Math.sin((cappped * Math.PI) / 2 / (cap * 1.1));
+		cappped_value = Math.min(value, cap);
+      return Math.sin(cappped_value/cap * Math.PI / 2 );
     }
   </script>
 </html>
